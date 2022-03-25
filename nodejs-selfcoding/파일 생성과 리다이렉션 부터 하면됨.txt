@@ -1,0 +1,91 @@
+let http = require('http');
+let fs = require('fs');
+let url = require('url');
+let qs = require('querystring');
+
+let app = http.createServer(function(request,response){
+    let _url = request.url;
+    let queryData = url.parse(_url, true).query;
+    let pathname = url.parse(_url, true).pathname;
+    
+    let list = '';
+    let title = queryData.id;
+    if(title === undefined) {
+      title = 'nodejs';
+    }
+
+    filelist = fs.readdirSync(`./data`, 'utf8');
+    list += '<ul>'
+    for(let i = 0 ; i < filelist.length ; i++) {
+      list += `<li><a href="/?id=${filelist[i]}">${filelist[i]}</a></li>`;
+    }
+    list += '</ul>'
+
+    if(pathname == '/') {
+      fs.readFile(`./data/${title}`, 'utf8', function(error, description) {
+        if(description === undefined) {
+          description = 'hello! nodejs!';
+        }
+        let template = `
+        <!doctype html>
+        <html>
+        <head>
+        <title>WEB1 - ${title}</title>
+        <meta charset="utf-8">
+        </head>
+        <body>
+        <h1><a href="/">WEB</a></h1>
+        ${list}
+        <a href ="/create">create</a>
+        <h2>${title}</h2>
+        <p>${description}</p>
+        </body>
+        </html>
+        `
+        response.writeHead(200);
+        response.end(template);
+      });
+    } else if (pathname == '/create') {
+      fs.readFile(`./data/${title}`, 'utf8', function(error, description) {
+        if(description === undefined) {
+          description = 'hello! nodejs!';
+        }
+        let template = `
+        <!doctype html>
+        <html>
+        <head>
+        <title>WEB1 - ${title}</title>
+        <meta charset="utf-8">
+        </head>
+        <body>
+        <h1><a href="/">WEB</a></h1>
+        ${list}
+        <div><a href ="/create">create</a></div>
+        <form action="/create_process" method="post">
+          <p><input type="text" name="id" placeholder="id"></p>
+          <p><textarea name ="description" placeholder="description"></textarea></p>
+          <p><input type="submit"></p>
+        </form>
+        </body>
+        </html>
+        `
+        response.writeHead(200);
+        response.end(template);
+      });
+    } else if (pathname === '/create_process') {
+      body = '';
+      request.on('data', function(data) {
+        body += data;
+      });
+      request.end('end', function() {
+        let post = qs.parse(body);
+        let title = post.title;
+        let description = post.description;
+        
+      });
+    } else {
+      response.writeHead(404);
+      response.end('Not Found');
+    }
+});
+app.listen(3000);
